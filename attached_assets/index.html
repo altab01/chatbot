@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 500px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+        
+        .header {
+            background-color: #764ba2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-title {
+            flex-grow: 1;
+        }
+        
+        .settings-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            position: relative;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            background-color: #e6e6e6;
+            color: #333;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        
+        .bot-message {
+            background-color: #764ba2;
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-top: 1px solid #ddd;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 25px;
+            margin-right: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: box-shadow 0.3s ease;
+        }
+        
+        #message-input:focus {
+            box-shadow: 0 0 5px rgba(118, 75, 162, 0.5);
+        }
+        
+        #send-button {
+            background-color: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        #send-button:hover {
+            background-color: #667eea;
+        }
+        
+        .send-icon {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            background-color: #f1f1f1;
+            border-radius: 15px;
+            border-bottom-left-radius: 0;
+            color: #666;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #888;
+            margin-right: 3px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            color: #764ba2;
+        }
+        
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .api-key-form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .submit-button {
+            background-color: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .submit-button:hover {
+            background-color: #667eea;
+        }
+        
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-title">AI Chatbot</div>
+            <button class="settings-button" id="settings-button">⚙️</button>
+        </div>
+        <div class="chat-area" id="chat-area">
+            <div class="message bot-message">
+                Hello! How can I help you today?
+            </div>
+            <div class="typing-indicator" id="typing-indicator">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-button">
+                <svg class="send-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Settings</div>
+                <button class="close-button" id="close-modal">&times;</button>
+            </div>
+            <div class="api-key-form">
+                <div class="form-group">
+                    <label for="api-key-input">OpenAI API Key</label>
+                    <input type="password" id="api-key-input" placeholder="sk-...">
+                </div>
+                <button class="submit-button" id="save-api-key">Save API Key</button>
+                <div id="status-message" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatArea = document.getElementById('chat-area');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
+            const typingIndicator = document.getElementById('typing-indicator');
+            const settingsButton = document.getElementById('settings-button');
+            const settingsModal = document.getElementById('settings-modal');
+            const closeModalButton = document.getElementById('close-modal');
+            const apiKeyInput = document.getElementById('api-key-input');
+            const saveApiKeyButton = document.getElementById('save-api-key');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Function to add messages to the chat
+            function addMessage(message, isUser = false) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.classList.add(isUser ? 'user-message' : 'bot-message');
+                messageElement.textContent = message;
+                
+                // Insert before typing indicator
+                chatArea.insertBefore(messageElement, typingIndicator);
+                
+                // Scroll to bottom
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
+            
+            // Function to show typing indicator
+            function showTypingIndicator() {
+                typingIndicator.style.display = 'block';
+                chatArea.scrollTop = chatArea.scrollHeight;
+            }
+            
+            // Function to hide typing indicator
+            function hideTypingIndicator() {
+                typingIndicator.style.display = 'none';
+            }
+            
+            // Function to send message to the server
+            async function sendMessage(message) {
+                try {
+                    showTypingIndicator();
+                    
+                    const response = await fetch('/get_response', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Add a small delay to simulate typing
+                    setTimeout(() => {
+                        hideTypingIndicator();
+                        addMessage(data.response);
+                    }, 1000);
+                } catch (error) {
+                    hideTypingIndicator();
+                    addMessage('Sorry, I had trouble connecting. Please try again.', false);
+                    console.error('Error:', error);
+                }
+            }
+            
+            // Function to handle sending a message
+            function handleSendMessage() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    addMessage(message, true);
+                    messageInput.value = '';
+                    sendMessage(message);
+                }
+            }
+            
+            // Function to check API key status
+            async function checkApiKeyStatus() {
+                try {
+                    const response = await fetch('/check_api_key');
+                    const data = await response.json();
+                    
+                    if (data.status === "API key is not configured") {
+                        addMessage("Note: I'm currently running without an OpenAI API key. You can set one in the settings (⚙️) to unlock my full capabilities. For now, I can only handle basic date, time, and math questions.");
+                    }
+                } catch (error) {
+                    console.error('Error checking API key status:', error);
+                }
+            }
+            
+            // Function to save API key
+            async function saveApiKey(apiKey) {
+                try {
+                    const response = await fetch('/set_api_key', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ api_key: apiKey })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    statusMessage.style.display = 'block';
+                    if (data.status === 'success') {
+                        statusMessage.textContent = 'API key saved successfully!';
+                        statusMessage.className = 'status-message status-success';
+                        
+                        // Clear the input
+                        apiKeyInput.value = '';
+                        
+                        // Close the modal after a delay
+                        setTimeout(() => {
+                            settingsModal.style.display = 'none';
+                            statusMessage.style.display = 'none';
+                            
+                            // Add a message to the chat
+                            addMessage("Great! I'm now connected to OpenAI. You can ask me more complex questions now!");
+                        }, 2000);
+                    } else {
+                        statusMessage.textContent = data.message || 'Failed to save API key';
+                        statusMessage.className = 'status-message status-error';
+                    }
+                } catch (error) {
+                    statusMessage.style.display = 'block';
+                    statusMessage.textContent = 'Error connecting to server';
+                    statusMessage.className = 'status-message status-error';
+                }
+            }
+            
+            // Event listeners
+            sendButton.addEventListener('click', handleSendMessage);
+            
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleSendMessage();
+                }
+            });
+            
+            // Settings modal event listeners
+            settingsButton.addEventListener('click', function() {
+                settingsModal.style.display = 'flex';
+            });
+            
+            closeModalButton.addEventListener('click', function() {
+                settingsModal.style.display = 'none';
+                statusMessage.style.display = 'none';
+            });
+            
+            // Close modal if clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === settingsModal) {
+                    settingsModal.style.display = 'none';
+                    statusMessage.style.display = 'none';
+                }
+            });
+            
+            // Save API key
+            saveApiKeyButton.addEventListener('click', function() {
+                const apiKey = apiKeyInput.value.trim();
+                if (apiKey) {
+                    saveApiKey(apiKey);
+                } else {
+                    statusMessage.style.display = 'block';
+                    statusMessage.textContent = 'Please enter an API key';
+                    statusMessage.className = 'status-message status-error';
+                }
+            });
+            
+            // Focus input on load
+            messageInput.focus();
+            
+            // Check API key status on load
+            checkApiKeyStatus();
+        });
+    </script>
+</body>
+</html>

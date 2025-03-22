@@ -1,0 +1,172 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "Hi",
+        "Hey",
+        "Hello",
+        "Good day",
+        "Greetings",
+        "What's up",
+        "How is it going"
+      ],
+      "responses": [
+        "Hello! How can I help you today?",
+        "Hi there! What can I do for you?",
+        "Hey! How can I assist you?",
+        "Greetings! How may I help you?",
+        "Hello there! What brings you here today?"
+      ]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": [
+        "Bye",
+        "See you later",
+        "Goodbye",
+        "Take care",
+        "I'm leaving",
+        "Have a good day"
+      ],
+      "responses": [
+        "Goodbye! Have a great day!",
+        "Bye! Come back soon!",
+        "See you later! Have a nice day!",
+        "Take care! Hope to chat again soon!"
+      ]
+    },
+    {
+      "tag": "thanks",
+      "patterns": [
+        "Thanks",
+        "Thank you",
+        "That's helpful",
+        "Appreciate it",
+        "Thanks for the help"
+      ],
+      "responses": [
+        "You're welcome!",
+        "Happy to help!",
+        "Anytime!",
+        "My pleasure!"
+      ]
+    },
+    {
+      "tag": "about",
+      "patterns": [
+        "What can you do",
+        "Who are you",
+        "What are you",
+        "What is your purpose",
+        "How do you work"
+      ],
+      "responses": [
+        "I'm a simple chatbot designed to help answer your questions!",
+        "I'm an AI assistant here to chat with you and provide information.",
+        "I'm a chatbot created to provide assistance and answer questions.",
+        "My purpose is to have conversations and help users with their queries."
+      ]
+    },
+    {
+      "tag": "help",
+      "patterns": [
+        "Help",
+        "I need help",
+        "Can you help me",
+        "What should I do",
+        "How does this work"
+      ],
+      "responses": [
+        "I'd be happy to help! What do you need assistance with?",
+        "Sure, I can help. What's your question?",
+        "I'm here to help! Please let me know what you're looking for.",
+        "How can I assist you today? Just let me know what you need help with."
+      ]
+    },
+    {
+      "tag": "date",
+      "patterns": [
+        "What date is it today",
+        "What is today's date",
+        "What day is it",
+        "What is the date",
+        "Date today",
+        "Tell me the date",
+        "What's the date today"
+      ],
+      "responses": [
+        "I'll need to check that for you in real-time. Please see the date function in my response."
+      ]
+    },
+    {
+      "tag": "time",
+      "patterns": [
+        "What time is it",
+        "What's the time",
+        "Tell me the time",
+        "Current time",
+        "Time right now"
+      ],
+      "responses": [
+        "I'll need to check the current time for you in real-time. Please see the time function in my response."
+      ]
+    },
+    {
+      "tag": "weather",
+      "patterns": [
+        "What's the weather like",
+        "How's the weather today",
+        "Is it raining",
+        "Weather forecast",
+        "Temperature today"
+      ],
+      "responses": [
+        "I don't have real-time weather data. You could check a weather service like weather.com or your local weather app.",
+        "I'm unable to provide real-time weather information. You might want to check a weather app or website for accurate forecasts.",
+        "Sorry, I don't have access to current weather data. You can check online weather services for that information."
+      ]
+    },
+    {
+      "tag": "jokes",
+      "patterns": [
+        "Tell me a joke",
+        "Say something funny",
+        "Do you know any jokes",
+        "Make me laugh",
+        "I want to hear a joke"
+      ],
+      "responses": [
+        "Why don't scientists trust atoms? Because they make up everything!",
+        "What did one wall say to the other wall? I'll meet you at the corner!",
+        "Why did the scarecrow win an award? Because he was outstanding in his field!",
+        "I told my wife she was drawing her eyebrows too high. She looked surprised!",
+        "How does a penguin build its house? Igloos it together!"
+      ]
+    },
+    {
+      "tag": "math",
+      "patterns": [
+        "Calculate",
+        "What is 2+2",
+        "Solve this equation",
+        "Math problem",
+        "Can you do math"
+      ],
+      "responses": [
+        "I can do basic math calculations for you in real-time. Please see the calculation in my response.",
+        "I can handle simple calculations. Let me solve that for you in real-time."
+      ]
+    },
+    {
+      "tag": "fallback",
+      "patterns": [""],
+      "responses": [
+        "I'm not sure I understand. Could you rephrase that?",
+        "I don't have an answer for that yet.",
+        "I'm still learning. Could you try asking something else?",
+        "I'm not sure how to respond to that. Is there something else I can help with?"
+      ]
+    }
+  ]
+}
