@@ -6,6 +6,7 @@ import math
 import json
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import google.generativeai as genai
+from models import db, ChatMessage
 
 # Load environment variables from .env file if it exists
 try:
@@ -15,10 +16,22 @@ try:
 except ImportError:
     print("python-dotenv not installed, using existing environment variables")
 
-# Configure the Gemini API - no need to specify version
-
 # Initialize the Flask app with static folder
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+
+# Configure database
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    db.init_app(app)
+    
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        print("Database tables created successfully")
+else:
+    print("WARNING: DATABASE_URL not found in environment variables!")
 
 # Create a Google Gemini Client - with a fallback to None if no API key is available
 try:
@@ -168,6 +181,30 @@ def chatbot_response():
         
         # Get AI response
         response = get_ai_response(message)
+        
+        # Save the chat message to the database
+        # Only attempt to save if database is configured
+        database_url = os.environ.get("DATABASE_URL")
+        if database_url:
+            try:
+                chat_message = ChatMessage(
+                    user_message=message,
+                    bot_response=response
+                )
+                db.session.add(chat_message)
+                db.session.commit()
+                print(f"Chat message saved to database with ID: {chat_message.id}")
+            except Exception as db_error:
+                print(f"Error saving to database: {db_error}")
+                # Try to handle database errors gracefully
+                try:
+                    db.session.rollback()
+                except:
+                    pass  # Ignore if rollback also fails
+                # Continue with response even if database save fails
+        else:
+            print("Database not configured - not saving chat history")
+        
         return jsonify({"response": response})
     
     except Exception as e:
@@ -182,6 +219,27 @@ def check_api_key():
     else:
         return jsonify({"status": "API key is not configured", 
                         "message": "Set your API key in the settings menu (⚙️) to use the Gemini AI features."})
+
+@app.route('/get_chat_history', methods=['GET'])
+def get_chat_history():
+    """Endpoint to retrieve chat history from the database"""
+    try:
+        # Check if database is configured
+        database_url = os.environ.get("DATABASE_URL")
+        if not database_url:
+            return jsonify({"status": "error", "message": "Database not configured"})
+        
+        # Fetch chat history from the database
+        # Get latest 50 messages, ordered by timestamp (newest first)
+        chat_messages = ChatMessage.query.order_by(ChatMessage.timestamp.desc()).limit(50).all()
+        
+        # Convert to list of dictionaries for JSON response
+        history = [message.to_dict() for message in chat_messages]
+        
+        return jsonify({"status": "success", "history": history})
+    except Exception as e:
+        print(f"Error retrieving chat history: {e}")
+        return jsonify({"status": "error", "message": "Error retrieving chat history"})
 
 @app.route('/set_api_key', methods=['POST'])
 def set_api_key():
