@@ -170,6 +170,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Function to load chat history
+    async function loadChatHistory() {
+        try {
+            const response = await fetch('/get_chat_history');
+            const data = await response.json();
+            
+            if (data.status === 'success' && data.history && data.history.length > 0) {
+                // Clear any existing messages
+                const existingMessages = chatArea.querySelectorAll('.message');
+                existingMessages.forEach(message => {
+                    if (!message.classList.contains('typing-indicator')) {
+                        message.remove();
+                    }
+                });
+                
+                // Add messages from history, most recent first
+                // We'll reverse the order to display oldest first
+                const historyItems = [...data.history].reverse();
+                
+                historyItems.forEach(item => {
+                    addMessage(item.user_message, true);
+                    addMessage(item.bot_response, false);
+                });
+                
+                console.log('Chat history loaded successfully');
+            } else if (data.status === 'error') {
+                console.log('Error loading chat history:', data.message);
+            } else {
+                console.log('No chat history found');
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
+    }
+    
     // Initialize
     checkApiKeyStatus();
+    loadChatHistory();
 });
