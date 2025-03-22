@@ -6,6 +6,7 @@ import math
 import json
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import google.generativeai as genai
+from sqlalchemy import text
 from models import db, ChatMessage
 
 # Load environment variables from .env file if it exists
@@ -243,20 +244,18 @@ def get_chat_history():
         try:
             # Fetch chat history from the database
             # Get latest 50 messages, ordered by timestamp (newest first)
-            with app.app_context():
-                # Ensure a fresh connection
-                db.session.remove()
-                
-                # Try to ping the database to see if it's responsive
-                db.engine.execute("SELECT 1")
-                
-                # Get the chat messages
-                chat_messages = ChatMessage.query.order_by(ChatMessage.timestamp.desc()).limit(50).all()
-                
-                # Convert to list of dictionaries for JSON response
-                history = [message.to_dict() for message in chat_messages]
-                
-                return jsonify({"status": "success", "history": history})
+            # Note: We're already in an app context from the route
+            
+            # Ensure a fresh connection
+            db.session.remove()
+            
+            # Get the chat messages - directly try to query without ping test
+            chat_messages = ChatMessage.query.order_by(ChatMessage.timestamp.desc()).limit(50).all()
+            
+            # Convert to list of dictionaries for JSON response
+            history = [message.to_dict() for message in chat_messages]
+            
+            return jsonify({"status": "success", "history": history})
         except Exception as db_error:
             print(f"Database query error: {db_error}")
             
