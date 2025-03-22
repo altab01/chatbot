@@ -5,7 +5,7 @@ import re
 import math
 import json
 from flask import Flask, request, jsonify, render_template, send_from_directory
-from openai import OpenAI, OpenAIError
+import google.generativeai as genai
 
 # Load environment variables from .env file if it exists
 try:
@@ -18,15 +18,21 @@ except ImportError:
 # Initialize the Flask app with static folder
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
-# Create a simple OpenAI Client - with a fallback to None if no API key is available
+# Create a Google Gemini Client - with a fallback to None if no API key is available
 try:
-    # Try to initialize the OpenAI client
-    client = OpenAI()
-    # Test the API key by attempting a simple call
-    api_key_set = os.environ.get("OPENAI_API_KEY") is not None
-except (OpenAIError, ImportError) as e:
-    print(f"OpenAI client initialization failed: {e}")
-    client = None
+    # Try to initialize the Gemini client
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    if gemini_api_key:
+        genai.configure(api_key=gemini_api_key)
+        # Test if the configuration works by creating a basic model
+        model = genai.GenerativeModel('gemini-pro')
+        api_key_set = True
+    else:
+        model = None
+        api_key_set = False
+except Exception as e:
+    print(f"Gemini client initialization failed: {e}")
+    model = None
     api_key_set = False
 
 # Fallback functions for when API is not available
@@ -61,7 +67,7 @@ def calculate_math(message):
         return "Sorry, I couldn't solve that math problem. Make sure it's a valid expression."
 
 def get_ai_response(message):
-    """Get a response from OpenAI API."""
+    """Get a response from Google Gemini API."""
     try:
         # First check if we should use our local functions for certain queries
         lower_message = message.lower()
@@ -78,25 +84,24 @@ def get_ai_response(message):
         if re.match(r'^[\d\+\-\*\/\(\)\^\s]+$', message):
             return calculate_math(message)
             
-        # If API key is available and client is initialized, use OpenAI
-        if client and api_key_set:
-            # The newest OpenAI model is "gpt-4o" which was released May 13, 2024.
-            # Do not change this unless explicitly requested by the user
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a helpful, friendly, and concise assistant. Provide short and direct answers to user questions."},
-                    {"role": "user", "content": message}
-                ],
-                max_tokens=250  # Allowing slightly longer responses
-            )
-            return response.choices[0].message.content
+        # If API key is available and model is initialized, use Gemini
+        if model and api_key_set:
+            # Using Gemini's chat API with system instructions
+            chat = model.start_chat(history=[])
+            
+            # Add system instructions to the prompt
+            system_prompt = "You are a helpful, friendly, and concise assistant. Provide short and direct answers to user questions."
+            full_prompt = f"{system_prompt}\n\nUser: {message}"
+            
+            # Get the response from Gemini
+            response = chat.send_message(full_prompt)
+            return response.text
         else:
             # Fallback if no API key is available
-            return "To use the AI features, please set your OpenAI API key in the settings menu (⚙️). For now, I can only handle basic date, time, and math questions."
+            return "To use the AI features, please set your Gemini API key in the settings menu (⚙️). For now, I can only handle basic date, time, and math questions."
     
     except Exception as e:
-        print(f"Error with OpenAI API: {e}")
+        print(f"Error with Gemini API: {e}")
         return "I encountered an error while processing your request. You might need to check your API key or connection."
 
 @app.route('/')
@@ -127,12 +132,12 @@ def check_api_key():
         return jsonify({"status": "API key is configured"})
     else:
         return jsonify({"status": "API key is not configured", 
-                        "message": "Set your API key in the settings menu (⚙️) to use the OpenAI API features."})
+                        "message": "Set your API key in the settings menu (⚙️) to use the Gemini AI features."})
 
 @app.route('/set_api_key', methods=['POST'])
 def set_api_key():
     """Endpoint to set API key (not for production use)"""
-    global client, api_key_set
+    global model, api_key_set
     
     try:
         data = request.get_json()
@@ -141,20 +146,22 @@ def set_api_key():
             return jsonify({"status": "error", "message": "No API key provided"})
         
         # This only sets the key for the current session and is not secure for production
-        os.environ["OPENAI_API_KEY"] = api_key
+        os.environ["GEMINI_API_KEY"] = api_key
         
-        # Update the client with the new key
+        # Update the model with the new key
         try:
-            client = OpenAI(api_key=api_key)
-            # Make a test call to verify the API key works
-            client.models.list(limit=1)
+            genai.configure(api_key=api_key)
+            # Test if the configuration works by creating a basic model
+            model = genai.GenerativeModel('gemini-pro')
+            # Test with a simple prompt
+            model.generate_content("Hello")
             api_key_set = True
             return jsonify({"status": "success", "message": "API key set successfully"})
         except Exception as e:
-            print(f"Error setting OpenAI API key: {e}")
-            os.environ.pop("OPENAI_API_KEY", None)
+            print(f"Error setting Gemini API key: {e}")
+            os.environ.pop("GEMINI_API_KEY", None)
             api_key_set = False
-            return jsonify({"status": "error", "message": f"Invalid API key or OpenAI API error: {str(e)}"})
+            return jsonify({"status": "error", "message": f"Invalid API key or Gemini API error: {str(e)}"})
             
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
@@ -170,9 +177,9 @@ if __name__ == '__main__':
     debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
     
     print("Starting the chatbot server...")
-    print(f"OpenAI API Key {'is' if api_key_set else 'is NOT'} configured.")
+    print(f"Gemini API Key {'is' if api_key_set else 'is NOT'} configured.")
     print(f"Server running at http://{host}:{port}/ (locally: http://127.0.0.1:{port}/)")
-    print("Click the ⚙️ icon to set your OpenAI API key")
+    print("Click the ⚙️ icon to set your Gemini API key")
     
     # Run the app with the specified host and port
     app.run(host=host, port=port, debug=debug_mode)
