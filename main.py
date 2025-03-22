@@ -24,12 +24,23 @@ database_url = os.environ.get("DATABASE_URL")
 if database_url:
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Add database connection pooling settings to handle connection issues
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 280,
+        "pool_timeout": 20,
+        "pool_pre_ping": True,
+        "max_overflow": 5
+    }
     db.init_app(app)
     
     # Create database tables
     with app.app_context():
-        db.create_all()
-        print("Database tables created successfully")
+        try:
+            db.create_all()
+            print("Database tables created successfully")
+        except Exception as db_error:
+            print(f"Database initialization error: {db_error}")
+            print("The application will continue running but database features may be limited")
 else:
     print("WARNING: DATABASE_URL not found in environment variables!")
 
@@ -229,17 +240,46 @@ def get_chat_history():
         if not database_url:
             return jsonify({"status": "error", "message": "Database not configured"})
         
-        # Fetch chat history from the database
-        # Get latest 50 messages, ordered by timestamp (newest first)
-        chat_messages = ChatMessage.query.order_by(ChatMessage.timestamp.desc()).limit(50).all()
-        
-        # Convert to list of dictionaries for JSON response
-        history = [message.to_dict() for message in chat_messages]
-        
-        return jsonify({"status": "success", "history": history})
+        try:
+            # Fetch chat history from the database
+            # Get latest 50 messages, ordered by timestamp (newest first)
+            with app.app_context():
+                # Ensure a fresh connection
+                db.session.remove()
+                
+                # Try to ping the database to see if it's responsive
+                db.engine.execute("SELECT 1")
+                
+                # Get the chat messages
+                chat_messages = ChatMessage.query.order_by(ChatMessage.timestamp.desc()).limit(50).all()
+                
+                # Convert to list of dictionaries for JSON response
+                history = [message.to_dict() for message in chat_messages]
+                
+                return jsonify({"status": "success", "history": history})
+        except Exception as db_error:
+            print(f"Database query error: {db_error}")
+            
+            # Attempt to recover the connection
+            try:
+                db.session.rollback()
+                db.session.remove()
+            except:
+                pass
+                
+            # Return a user-friendly error message
+            return jsonify({
+                "status": "error", 
+                "message": "Unable to retrieve chat history. The database connection may be temporarily unavailable.",
+                "history": []  # Return an empty history so the app can still function
+            })
     except Exception as e:
         print(f"Error retrieving chat history: {e}")
-        return jsonify({"status": "error", "message": "Error retrieving chat history"})
+        return jsonify({
+            "status": "error", 
+            "message": "Error retrieving chat history", 
+            "history": []  # Return an empty history so the app can still function
+        })
 
 @app.route('/set_api_key', methods=['POST'])
 def set_api_key():

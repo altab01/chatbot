@@ -197,11 +197,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Chat history loaded successfully');
             } else if (data.status === 'error') {
                 console.log('Error loading chat history:', data.message);
+                // Don't show error to the user - just use the default welcome message
+                // This creates a better user experience when database is temporarily unavailable
             } else {
                 console.log('No chat history found');
+                // New session or empty history
             }
         } catch (error) {
             console.error('Error loading chat history:', error);
+            // Don't show the error to the user, just continue with a new chat session
+            // The user won't notice that there was an issue loading history
         }
     }
     
