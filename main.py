@@ -15,6 +15,8 @@ try:
 except ImportError:
     print("python-dotenv not installed, using existing environment variables")
 
+# Configure the Gemini API - no need to specify version
+
 # Initialize the Flask app with static folder
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
@@ -86,16 +88,24 @@ def get_ai_response(message):
             
         # If API key is available and model is initialized, use Gemini
         if model and api_key_set:
-            # Using Gemini's chat API with system instructions
-            chat = model.start_chat(history=[])
-            
-            # Add system instructions to the prompt
-            system_prompt = "You are a helpful, friendly, and concise assistant. Provide short and direct answers to user questions."
-            full_prompt = f"{system_prompt}\n\nUser: {message}"
-            
-            # Get the response from Gemini
-            response = chat.send_message(full_prompt)
-            return response.text
+            try:
+                # Using Gemini's generate_content method directly
+                system_prompt = "You are a helpful, friendly, and concise assistant. Provide short and direct answers to user questions."
+                full_prompt = f"{system_prompt}\n\nUser: {message}"
+                
+                # Generate content directly
+                response = model.generate_content(full_prompt)
+                
+                # Return the text from the response
+                return response.text
+            except Exception as e:
+                print(f"Error generating content: {e}")
+                # Try alternative method if the first one fails
+                try:
+                    response = model.generate_content(message)
+                    return response.text
+                except:
+                    return "I'm having trouble processing your request with Gemini. Please check your API key and internet connection."
         else:
             # Fallback if no API key is available
             return "To use the AI features, please set your Gemini API key in the settings menu (⚙️). For now, I can only handle basic date, time, and math questions."
