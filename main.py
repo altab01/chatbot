@@ -26,9 +26,48 @@ try:
     gemini_api_key = os.environ.get("GEMINI_API_KEY")
     if gemini_api_key:
         genai.configure(api_key=gemini_api_key)
-        # Test if the configuration works by creating a basic model
-        model = genai.GenerativeModel('gemini-pro')
-        api_key_set = True
+        # Try to retrieve available models
+        try:
+            # Convert generator to list
+            available_models_list = list(genai.list_models())
+            model_names = [m.name for m in available_models_list]
+            print("Available Gemini models:", model_names)
+            
+            # Try to find an appropriate Gemini model
+            model_name = 'models/gemini-1.5-pro'  # Default
+            
+            # Find the best model
+            if any('gemini-1.5-pro' in m for m in model_names):
+                for m in model_names:
+                    if 'gemini-1.5-pro' in m and 'vision' not in m:
+                        model_name = m
+                        break
+            elif any('gemini-2.0-pro' in m for m in model_names):
+                for m in model_names:
+                    if 'gemini-2.0-pro' in m:
+                        model_name = m
+                        break
+            elif any('gemini' in m for m in model_names):
+                for m in model_names:
+                    if 'gemini' in m and 'vision' not in m:
+                        model_name = m
+                        break
+            elif any('text' in m for m in model_names):
+                for m in model_names:
+                    if 'text' in m:
+                        model_name = m
+                        break
+            elif model_names:
+                model_name = model_names[0]
+            
+            print(f"Using model: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            api_key_set = True
+        except Exception as e:
+            print(f"Error listing models: {e}")
+            # Fallback to a standard model
+            model = genai.GenerativeModel('models/gemini-1.5-pro')
+            api_key_set = True
     else:
         model = None
         api_key_set = False
@@ -161,11 +200,55 @@ def set_api_key():
         # Update the model with the new key
         try:
             genai.configure(api_key=api_key)
-            # Test if the configuration works by creating a basic model
-            model = genai.GenerativeModel('gemini-pro')
-            # Test with a simple prompt
-            model.generate_content("Hello")
-            api_key_set = True
+            # Try to retrieve available models first
+            try:
+                # Convert generator to list
+                available_models_list = list(genai.list_models())
+                model_names = [m.name for m in available_models_list]
+                print("Set API Key - Available Gemini models:", model_names)
+                
+                # Try to find an appropriate Gemini model
+                model_name = 'models/gemini-1.5-pro'  # Default
+                
+                # Find the best model
+                if any('gemini-1.5-pro' in m for m in model_names):
+                    for m in model_names:
+                        if 'gemini-1.5-pro' in m and 'vision' not in m:
+                            model_name = m
+                            break
+                elif any('gemini-2.0-pro' in m for m in model_names):
+                    for m in model_names:
+                        if 'gemini-2.0-pro' in m:
+                            model_name = m
+                            break
+                elif any('gemini' in m for m in model_names):
+                    for m in model_names:
+                        if 'gemini' in m and 'vision' not in m:
+                            model_name = m
+                            break
+                elif any('text' in m for m in model_names):
+                    for m in model_names:
+                        if 'text' in m:
+                            model_name = m
+                            break
+                elif model_names:
+                    model_name = model_names[0]
+                        
+                print(f"Using model: {model_name}")
+                model = genai.GenerativeModel(model_name)
+                
+                # Test with a simple prompt
+                response = model.generate_content("Hello")
+                if response and hasattr(response, 'text'):
+                    api_key_set = True
+                else:
+                    raise Exception("No valid response from model")
+            except Exception as model_error:
+                print(f"Error with models list: {model_error}. Trying with default model.")
+                # Fallback to default model
+                model = genai.GenerativeModel('models/gemini-1.5-pro')
+                model.generate_content("Hello")
+                api_key_set = True
             return jsonify({"status": "success", "message": "API key set successfully"})
         except Exception as e:
             print(f"Error setting Gemini API key: {e}")
